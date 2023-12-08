@@ -58,6 +58,8 @@ namespace Equationer
                 {
                     for (; i + j < text.Length && !IsOperator(text[i + j]); j++) ;
 
+                    // TODO: ** WHAT ABOUT A ^ 2 ^ 3 ? **
+
                     // Draw exponent text as superscript
                     previousWidth += g.MeasureString(baseTerm, font).Width * 0.95f; // TODO: this may change
                     float yOffset = (font.Height - font.GetHeight()) / 2;
@@ -125,7 +127,7 @@ namespace Equationer
             {
                 for(int i = 0;i < input.Length;i++)
                 {
-
+                    Console.WriteLine(input[i]);
                     //( 3 + 4 )x , (3 + 4)3
                     // ( 2  = 3 )
                     if (IsNumeric(input[i]) || ((i == 0 || IsOperator(input[i - 1]) || input[i - 1] == '(') && input[i] == equationUnknown))
@@ -163,8 +165,8 @@ namespace Equationer
                                 for (; operatorPosition < input.Length && input[operatorPosition] == ')'; operatorPosition++, pAfter++) ;
                                 op = operatorPosition < input.Length ? input[operatorPosition] : Term.Nothing;
                             }
-                            i = operatorPosition;
                         }
+                        i = operatorPosition;                        
                         terms.Add(new Term(value, unknown, op, pBefore, pAfter));
                     }
 
@@ -178,7 +180,7 @@ namespace Equationer
         }
         private void UpdateDegrees()
         {
-            
+
             for(int i = 0; i < terms.Count; i++)
             {
                 if(terms[i].Unknown == equationUnknown)
@@ -201,8 +203,6 @@ namespace Equationer
                 }
             }
 
-            for (int i = 0; i < terms.Count; i++)
-                Console.WriteLine("{0}. {1}", i, terms[i].ToString());
             
         }
 
