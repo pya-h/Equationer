@@ -35,9 +35,11 @@ namespace Equationer
                 input = DeleteNonSense(txtInput.Text);
                 terms.Clear();
                 AnalizeInput(input);
+
+                UpdateDegrees();
                 listSolution.Items.Clear();
                 listSolution.Items.Add(GetNewStep());
-                UpdateDegrees();
+                
                 do
                 {
                     calculationRemains = false;
@@ -69,51 +71,59 @@ namespace Equationer
 
         private void AnalizeInput(string input)
         {
-            for(int i = 0;i < input.Length;i++)
+            try
             {
-
-                //( 3 + 4 )x , (3 + 4)3
-                // ( 2  = 3 )
-                if (IsNumeric(input[i]) || ((i == 0 || IsOperator(input[i - 1]) || input[ i - 1 ] == '(') && input[i] == equationUnknown))
+                for(int i = 0;i < input.Length;i++)
                 {
-                    int j, sign = 1;
-                    int pBefore = 0, pAfter = 0;
 
-                    if (i != 0)
+                    //( 3 + 4 )x , (3 + 4)3
+                    // ( 2  = 3 )
+                    if (IsNumeric(input[i]) || ((i == 0 || IsOperator(input[i - 1]) || input[i - 1] == '(') && input[i] == equationUnknown))
                     {
-                        int ii = input[i - 1] != '-' ? i : i - 1;
-                        for (pBefore = 0 ; pBefore <= ii-1 && input[ii - pBefore - 1] == '('; pBefore++) ;
+                        int j, sign = 1;
+                        int pBefore = 0, pAfter = 0;
 
-                        if ((i > 1 && (IsOperator(input[i - 2]) || input[i - 2] == '(') && (input[i - 1] == '+' || input[i - 1] == '-')) || (i == 1 && IsOperator(input[0])))
-                            sign = input[i - 1] == '-' ? -1 : 1;
-                    }
-                    for (j = i + 1; j < input.Length && IsNumeric(input[j]); j++) ;
-                    double value = input[i] != equationUnknown ? (j < input.Length ? Double.Parse(input.Substring(i, j - i)) : Double.Parse(input.Substring(i))) : 1.0;
-                    value *= sign;
-                    char unknown = input[i] != equationUnknown ? Term.Nothing : equationUnknown, op = Term.Nothing; // ??????????????????
-                    int operatorPosition;
-                    if (j < input.Length && input[j] == equationUnknown)
-                    {
-                        unknown = equationUnknown;
-                        operatorPosition = j + 1;
-                    }
-                    else
-                        operatorPosition = j;
-
-                    if (operatorPosition < input.Length)
-                    {
-                        if (IsOperator(input[operatorPosition]))
-                            op = input[operatorPosition];
-                        else
+                        if (i != 0)
                         {
-                            for (; operatorPosition < input.Length && input[operatorPosition] == ')'; operatorPosition++, pAfter++) ;
-                            op = operatorPosition < input.Length ? input[operatorPosition] : Term.Nothing;
-                        }
-                        i = operatorPosition;
-                    }
-                    terms.Add(new Term(value, unknown, op, pBefore, pAfter));
-                }
+                            int ii = input[i - 1] != '-' ? i : i - 1;
+                            for (pBefore = 0 ; pBefore <= ii-1 && input[ii - pBefore - 1] == '('; pBefore++) ;
 
+                            if ((i > 1 && (IsOperator(input[i - 2]) || input[i - 2] == '(') && (input[i - 1] == '+' || input[i - 1] == '-')) || (i == 1 && IsOperator(input[0])))
+                                sign = input[i - 1] == '-' ? -1 : 1;
+                        }
+                        for (j = i + 1; j < input.Length && IsNumeric(input[j]); j++) ;
+                        double value = input[i] != equationUnknown ? (j < input.Length ? Double.Parse(input.Substring(i, j - i)) : Double.Parse(input.Substring(i))) : 1.0;
+                        value *= sign;
+                        char unknown = input[i] != equationUnknown ? Term.Nothing : equationUnknown, op = Term.Nothing; // ??????????????????
+                        int operatorPosition;
+                        if (j < input.Length && input[j] == equationUnknown)
+                        {
+                            unknown = equationUnknown;
+                            operatorPosition = j + 1;
+                        }
+                        else
+                            operatorPosition = j;
+
+                        if (operatorPosition < input.Length)
+                        {
+                            if (IsOperator(input[operatorPosition]))
+                                op = input[operatorPosition];
+                            else
+                            {
+                                for (; operatorPosition < input.Length && input[operatorPosition] == ')'; operatorPosition++, pAfter++) ;
+                                op = operatorPosition < input.Length ? input[operatorPosition] : Term.Nothing;
+                            }
+                            i = operatorPosition;
+                        }
+                        terms.Add(new Term(value, unknown, op, pBefore, pAfter));
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                MessageBox.Show("Error in analizing input! cause: " + ex.Message, "Analize Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         private void UpdateDegrees()
@@ -125,17 +135,24 @@ namespace Equationer
                 {
                     if(terms[i].Operator == '^')
                     {
-                        if(terms[i + 1].ParenthesisBefore == 0 && terms[i+1].Unknown == Term.Nothing)
+                        if(terms[i + 1].ParenthesisBefore == 0)// && terms[i+1].Unknown == Term.Nothing)
                         {
-                            terms[i].Degree = new Term(terms[i + 1].Value, Term.Nothing, Term.Nothing, 0, 0);
+                            terms[i].Degree = new Term(terms[i + 1].Value, terms[i + 1].Unknown, Term.Nothing, 0, 0);
                             RemoveSecondOperand(i);
                             calculationRemains = true;
                             // i-- needed ? i dont think, its just a hint for future debugging
+                        }
+                        else
+                        {
+                            // like: x ^ (2 + ...) + ...
                         }
                     }
                     
                 }
             }
+
+            for (int i = 0; i < terms.Count; i++)
+                Console.WriteLine("{0}. {1}", i, terms[i].ToString());
             
         }
 
@@ -354,8 +371,10 @@ namespace Equationer
             string step = (solutionStep++).ToString() + ".\t"; // use String.Format ;0 => 00, 1 => 01 , ...
             while (DeleteZeroes()) ;
             while (EditZeroPower()) ;
+            
             for (int i = 0; i < terms.Count;i++ )
             {
+
                 for (int j = 0; j < terms[i].ParenthesisBefore; j++)
                     step += "( ";
                 if (terms[i].Value != 1.0 || terms[i].Unknown != equationUnknown)

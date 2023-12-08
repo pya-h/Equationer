@@ -7,7 +7,7 @@ namespace Equationer
         public const char Nothing = '\0', Empty = ' ';
     
         private double termValue;
-        private Term degree;
+        private Term degree = null;
         public bool degreeDetermined;
         private char unknown, termOperator;
         private int parenthesisBefore, parenthesisAfter;
@@ -74,8 +74,6 @@ namespace Equationer
             set
             {
                 this.unknown = value;
-                this.Degree = new Term(value == Term.Nothing || value == Term.Empty ? 0.0 : this.Operator != '^' ? 1.0 : 2.0);
-                
             }
         }
 
@@ -85,17 +83,28 @@ namespace Equationer
             set { this.termOperator = value;}
         }
 
-        public Term(double v = 0.0, char u = Term.Nothing, char o = Term.Nothing, int pb = 0, int pa = 0, double deg = 0)
+        public Term(double v = 0.0, char u = Term.Nothing, char o = Term.Nothing, int pb = 0, int pa = 0)
         {
-            
+
             this.Value = v;
             this.Unknown = u == Empty ? Nothing : u;
             this.Operator = o != Term.Empty ? o : Nothing;
+            //this.Degree = new Term(this.Unknown == Term.Nothing || this.Unknown == Term.Empty ? 0.0 : this.Operator != '^' ? 1.0 : 2.0);
+
             this.ParenthesisAfter = pa;
             this.ParenthesisBefore = pb;
-            //this.Degree = new Term(deg);
             this.DegreeDetermined = false;
         }
 
+        public override string ToString()
+        {
+            string expression = "";
+            if (this.Value != 1.0 || this.Unknown != Term.Nothing)
+                expression += this.Value.ToString();
+            if (this.Unknown != Term.Nothing)
+                expression += this.Unknown;
+
+            return this.Operator != Term.Nothing ? string.Format("{0} {1} ", expression, this.Operator) : expression;
+        }
     }
 }
