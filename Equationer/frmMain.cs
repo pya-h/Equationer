@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.IO;
+using System.Drawing;
 
 namespace Equationer
 {
@@ -18,8 +19,57 @@ namespace Equationer
             InitializeComponent();
             equationUnknown = Term.Nothing;
             terms = new List<Term>();
+            listSolution.DrawMode = DrawMode.OwnerDrawVariable;
+            listSolution.MeasureItem += listSolution_MeasureItem;
+            listSolution.DrawItem += listSolution_DrawItem;
         }
 
+        private void listSolution_MeasureItem(object sender, MeasureItemEventArgs e)
+        {
+            e.ItemHeight = 30; // Set the height of each item
+        }
+
+        private void listSolution_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index >= 0)
+            {
+                e.DrawBackground();
+
+                string expression = listSolution.Items[e.Index].ToString();
+                DrawSuperscriptText(expression, e.Graphics, e.Bounds, e.Font, e.ForeColor);
+
+                e.DrawFocusRectangle();
+            }
+        }
+
+        private void DrawSuperscriptText(string text, Graphics g, Rectangle bounds, Font font, Color color)
+        {
+            float previousWidth = 0;
+            // Split the text into base and exponent parts
+            for (int i = 0, j = 1; i < text.Length; i += j, j = 1)
+            {
+                for (; i + j < text.Length && text[i + j] != '^'; j++) ;
+                // Draw the entire text if it doesn't contain '^'
+                string baseTerm = text.Substring(i, j);
+                
+                g.DrawString(baseTerm, font, new SolidBrush(color), previousWidth + bounds.X, bounds.Y);
+                i += j + 1; j = 0;
+                if (i + j < text.Length)
+                {
+                    for (; i + j < text.Length && !IsOperator(text[i + j]); j++) ;
+
+                    // Draw exponent text as superscript
+                    previousWidth += g.MeasureString(baseTerm, font).Width * 0.95f; // TODO: this may change
+                    float yOffset = (font.Height - font.GetHeight()) / 2;
+                    float fontSize = float.Parse(font.Size.ToString()) * 0.6f;
+                    string exponentTerm = text.Substring(i, j);
+                    Font exponentTermFont = new Font(font.FontFamily, fontSize);
+                    g.DrawString(exponentTerm, exponentTermFont, new SolidBrush(color), bounds.X + previousWidth, bounds.Y - yOffset);
+                    previousWidth += g.MeasureString(exponentTerm, exponentTermFont).Width * 0.95f; // TODO: this may change
+                }
+            }
+                
+        }
         private void frmMain_Load(object sender, EventArgs e)
         {
             txtInput.Focus();
@@ -504,9 +554,7 @@ namespace Equationer
 
         private bool IsOperator(char c)
         {
-            if (c == '^' || (c >= '*' && c <= '/') || (c >= '<' && c <= '>'))
-                return true;
-            return false;
+            return (c == '^' || (c >= '*' && c <= '/') || (c >= '<' && c <= '>'));
         }
 
         private void txtInput_TextChanged(object sender, EventArgs e)
